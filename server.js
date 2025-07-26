@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cookieParser=require("cookie-parser");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -17,7 +18,7 @@ const {
 //Middleware to handle cors
 app.use(
   cors({
-    origin: "https://interview-prep-frontend-red.vercel.app/",
+    origin: "https://interview-prep-frontend-red.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -28,7 +29,7 @@ connectDB();
 
 //Middleware
 app.use(express.json());
-
+app.use(cookieParser()); 
 //Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/sessions", sessionRoutes);
