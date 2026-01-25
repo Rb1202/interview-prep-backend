@@ -64,7 +64,17 @@ const generateConceptExplanation = async (req, res) => {
       model: "gemini-2.0-flash-lite",
       contents: prompt,
     });
+
     let rawText = response.text;
+    
+    if (!rawText) {
+      console.error("No text in response:", JSON.stringify(response, null, 2));
+      return res.status(500).json({
+        message: "Failed to generate explanation",
+        error: "No text received from AI model",
+      });
+    }
+    
     //Clean it:Remove ```json and  ``` from beginning and end
     const cleanedText = rawText
       .replace(/^```json\s*/, "") //remove starting ``` json
@@ -75,6 +85,8 @@ const generateConceptExplanation = async (req, res) => {
     const data = JSON.parse(cleanedText);
     res.status(200).json(data);
   } catch (error) {
+    console.error("Error generating explanation:", error);
+    console.error("Error stack:", error.stack);
     res.status(500).json({
       message: "Failed to generate explanation",
       error: error.message,
