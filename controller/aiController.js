@@ -22,7 +22,7 @@ const generateInterviewQuestions = async (req, res) => {
       role,
       experience,
       topicsToFocus,
-      numberOfQuestions
+      numberOfQuestions,
     );
 
     const response = await ai.models.generateContent({
@@ -45,12 +45,16 @@ const generateInterviewQuestions = async (req, res) => {
     // Check if it's a quota/rate limit error
     let errorMessage = error.message;
     let statusCode = 500;
-    
-    if (error.message && (error.message.includes("quota") || error.message.includes("429"))) {
+
+    if (
+      error.message &&
+      (error.message.includes("quota") || error.message.includes("429"))
+    ) {
       statusCode = 429; // Too Many Requests
-      errorMessage = "API quota exceeded. Please wait a moment and try again, or check your Google AI Studio billing plan.";
+      errorMessage =
+        "API quota exceeded. Please wait a moment and try again, or check your Google AI Studio billing plan.";
     }
-    
+
     res.status(statusCode).json({
       message: "Failed to generate questions",
       error: errorMessage,
@@ -68,22 +72,21 @@ const generateConceptExplanation = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
     const prompt = conceptExplainPrompt(question);
-    
+
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-lite",
       contents: prompt,
     });
 
-    let rawText = response.text;
-    
+    const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
     if (!rawText) {
-      console.error("No text in response:", JSON.stringify(response, null, 2));
+      console.error("Invalid Gemini response:", response);
       return res.status(500).json({
-        message: "Failed to generate explanation",
-        error: "No text received from AI model",
+        message: "Failed to generate questions",
+        error: "No text received from Gemini",
       });
     }
-    
     //Clean it:Remove ```json and  ``` from beginning and end
     const cleanedText = rawText
       .replace(/^```json\s*/, "") //remove starting ``` json
@@ -96,21 +99,24 @@ const generateConceptExplanation = async (req, res) => {
   } catch (error) {
     console.error("Error generating explanation:", error);
     console.error("Error message:", error.message);
-    
+
     // Check if it's a quota/rate limit error
     let errorMessage = error.message;
     let statusCode = 500;
     let retryAfter = null;
-    
+
     if (error.message && error.message.includes("quota")) {
       statusCode = 429; // Too Many Requests
-      errorMessage = "API quota exceeded. Please wait a moment and try again, or check your Google AI Studio billing plan.";
-      
+      errorMessage =
+        "API quota exceeded. Please wait a moment and try again, or check your Google AI Studio billing plan.";
+
       // Try to extract retry delay from error
       try {
         const errorObj = JSON.parse(error.message);
         if (errorObj?.error?.details) {
-          const retryInfo = errorObj.error.details.find(d => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo");
+          const retryInfo = errorObj.error.details.find(
+            (d) => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo",
+          );
           if (retryInfo?.retryDelay) {
             retryAfter = retryInfo.retryDelay;
           }
@@ -126,13 +132,13 @@ const generateConceptExplanation = async (req, res) => {
       statusCode = 429;
       errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
     }
-    
+
     res.status(statusCode).json({
       message: "Failed to generate explanation",
       error: errorMessage,
       retryAfter: retryAfter,
-      ...(retryAfter && { 
-        retryMessage: `Please try again in ${retryAfter} seconds.` 
+      ...(retryAfter && {
+        retryMessage: `Please try again in ${retryAfter} seconds.`,
       }),
     });
   }
