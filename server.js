@@ -1,5 +1,5 @@
 require("dotenv").config();
-const cookieParser=require("cookie-parser");
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -15,10 +15,15 @@ const {
   generateConceptExplanation,
 } = require("./controller/aiController");
 
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 //Middleware to handle cors
 app.use(
   cors({
-    origin: "https://interview-prep-frontend-red.vercel.app",
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],

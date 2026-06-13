@@ -11,12 +11,16 @@ exports.createSession = async (req, res) => {
       req.body;
     const userId = req.user._id; //Assuming you have a middleware setting req.user
 
+    if (!role || !experience || !topicsToFocus || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, message: "Role, experience, topics and questions are required" });
+    }
+
     const session = await Session.create({
       user: userId,
-      role,
+      role: role.trim(),
       experience,
-      topicsToFocus,
-      description,
+      topicsToFocus: topicsToFocus.trim(),
+      description: description?.trim() || "",
     });
 
     const questionDocs = await Promise.all(
@@ -59,7 +63,10 @@ exports.getMySessions = async (req, res) => {
 
 exports.getSessionById = async (req, res) => {
   try {
-    const session = await Session.findById(req.params.id)
+    const session = await Session.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    })
       .populate({
         path: "questions",
         options: { sort: { isPinned: -1, createdAt: 1 } },
@@ -82,17 +89,13 @@ exports.getSessionById = async (req, res) => {
 
 exports.deleteSession = async (req, res) => {
   try {
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
 
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
-    }
-
-    //Check if the logged-in user owns this session
-    if (session.user.toString() !== req.user.id) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized to delete this session" });
     }
 
     //First delete all questions linked to this session

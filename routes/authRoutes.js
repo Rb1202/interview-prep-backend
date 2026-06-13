@@ -1,5 +1,5 @@
 const express=require("express");
-const {registerUser,loginUser,getUserProfile}=require("../controller/authController");
+const {registerUser,loginUser,getUserProfile,logoutUser}=require("../controller/authController");
 const {protect} =require("../middlewares/authMiddleware");
 const upload=require("../middlewares/uploadMiddleware");
 const router=express.Router();
@@ -7,6 +7,7 @@ const router=express.Router();
 //Auth routes
 router.post("/register",registerUser);     //Register user
 router.post("/login",loginUser);    //Login user
+router.post("/logout",logoutUser);    //Logout user
 router.get("/profile",protect,getUserProfile) //Get user profile
 
 router.post("/upload-image",upload.single("image"),(req,res)=>{

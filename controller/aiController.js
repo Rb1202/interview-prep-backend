@@ -6,6 +6,36 @@ const {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+const parseJsonFromModelText = (rawText) => {
+  if (!rawText) {
+    throw new Error("No text received from Gemini");
+  }
+
+  const withoutFence = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(withoutFence);
+  } catch (error) {
+    const firstArray = withoutFence.indexOf("[");
+    const lastArray = withoutFence.lastIndexOf("]");
+    const firstObject = withoutFence.indexOf("{");
+    const lastObject = withoutFence.lastIndexOf("}");
+
+    if (firstArray !== -1 && lastArray > firstArray) {
+      return JSON.parse(withoutFence.slice(firstArray, lastArray + 1));
+    }
+
+    if (firstObject !== -1 && lastObject > firstObject) {
+      return JSON.parse(withoutFence.slice(firstObject, lastObject + 1));
+    }
+
+    throw error;
+  }
+};
+
 //@desc Generate interview questions and answeres using Gemini
 //@route POST/api/ai/generate-questions
 //@access Private
@@ -13,16 +43,21 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const generateInterviewQuestions = async (req, res) => {
   try {
     const { role, experience, topicsToFocus, numberOfQuestions } = req.body;
+    const questionCount = Number(numberOfQuestions);
 
-    if (!role || !experience || !topicsToFocus || !numberOfQuestions) {
+    if (!role || !experience || !topicsToFocus || !Number.isInteger(questionCount)) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (questionCount < 1 || questionCount > 20) {
+      return res.status(400).json({ message: "Number of questions must be between 1 and 20" });
     }
 
     const prompt = questionAnswerPrompt(
       role,
       experience,
       topicsToFocus,
-      numberOfQuestions,
+      questionCount,
     );
 
     const response = await ai.models.generateContent({
@@ -30,16 +65,10 @@ const generateInterviewQuestions = async (req, res) => {
       contents: prompt,
     });
 
-    let rawText = response.text;
-
-    // Clean it: Remove ```json and ``` from beginning and end
-    const cleanedText = rawText
-      .replace(/^```json\s*/, "") //remove starting ``` json
-      .replace(/```$/, "") //remove ending ```
-      .trim();
-
-    //Now safe to parse
-    const data = JSON.parse(cleanedText);
+    const data = parseJsonFromModelText(response.text);
+    if (!Array.isArray(data)) {
+      return res.status(502).json({ message: "AI returned an invalid question format" });
+    }
     res.status(200).json(data);
   } catch (error) {
     // Check if it's a quota/rate limit error
@@ -78,23 +107,11 @@ const generateConceptExplanation = async (req, res) => {
       contents: prompt,
     });
 
-    const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!rawText) {
-      console.error("Invalid Gemini response:", response);
-      return res.status(500).json({
-        message: "Failed to generate questions",
-        error: "No text received from Gemini",
-      });
+    const rawText = response.text || response?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = parseJsonFromModelText(rawText);
+    if (!data.title || !data.explanation) {
+      return res.status(502).json({ message: "AI returned an invalid explanation format" });
     }
-    //Clean it:Remove ```json and  ``` from beginning and end
-    const cleanedText = rawText
-      .replace(/^```json\s*/, "") //remove starting ``` json
-      .replace(/```$/, "") //remove ending ```
-      .trim();
-
-    //Now safe to parse
-    const data = JSON.parse(cleanedText);
     res.status(200).json(data);
   } catch (error) {
     console.error("Error generating explanation:", error);

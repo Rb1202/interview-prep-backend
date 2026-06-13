@@ -9,11 +9,11 @@ exports.addQuestionsToSession = async (req, res) => {
   try {
     const { sessionId, questions } = req.body;
 
-    if (!sessionId || !questions ||!Array.isArray(questions)) {
+    if (!sessionId || !questions || !Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ message: "Invalid input data" });
     }
 
-    const session = await Session.findById(sessionId);
+    const session = await Session.findOne({ _id: sessionId, user: req.user.id });
 
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
@@ -52,6 +52,13 @@ exports.togglePinQuestion = async (req, res) => {
         .json({ success: false, message: "Question not found" });
     }
 
+    const session = await Session.findOne({ _id: question.session, user: req.user.id });
+    if (!session) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to update this question" });
+    }
+
     question.isPinned = !question.isPinned;
     await question.save();
 
@@ -77,6 +84,13 @@ exports.updateQuestionNote = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Question not found" });
+    }
+
+    const session = await Session.findOne({ _id: question.session, user: req.user.id });
+    if (!session) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to update this question" });
     }
 
     question.note = note || "";
