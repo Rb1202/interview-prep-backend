@@ -15,7 +15,12 @@ const {
   generateConceptExplanation,
 } = require("./controller/aiController");
 
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "https://interview-prep-frontend-red.vercel.app",
+];
+
+const allowedOrigins = (process.env.CLIENT_URL || defaultAllowedOrigins.join(","))
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
