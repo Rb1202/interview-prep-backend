@@ -1,40 +1,81 @@
-const questionAnswerPrompt=(role,experience,topicsToFocus,numberOfQuestions)=>`
-    You are an AI trained to generate technical interview questions and answers.
+const questionAnswerPrompt = (
+  role,
+  experience,
+  topicsToFocus,
+  numberOfQuestions
+) => `
+You are an expert technical interviewer and mentor.
 
-    Task:
-    - Role:${role}
-    - Candidate Experience: ${experience} years
-    - Focus Topics: ${topicsToFocus}
-    - Write ${numberOfQuestions} interview questions.
-    - For each question, generate a detailed but beginner-friendly answer.
-    - If the answer needs a code example, add appropriate block of code inside.
-    - Keep formatting very clean.
-    - Return a pure JSON array like:
-    [
-        {
-            "question":"Question here?",
-            "answer":"Answer here"
-        },
-        ...
-    ]
-    Important: Do NOT add any extra text. Only return valid JSON.   
-    `;
+Generate ${numberOfQuestions} high-quality interview questions and answers for this candidate profile:
+
+Candidate Profile:
+- Target Role: ${role}
+- Experience Level: ${experience} years
+- Focus Topics: ${topicsToFocus}
+
+Question Requirements:
+- Match the difficulty to the candidate's experience level.
+- Cover the requested focus topics without repeating the same idea.
+- Mix conceptual, practical, scenario-based, and debugging-style questions.
+- Prefer questions that test real-world understanding instead of memorized definitions.
+- Make each question specific enough that it would be useful in an actual interview.
+
+Answer Requirements:
+- Start with a clear direct answer.
+- Explain the concept in simple, interview-ready language.
+- Add a practical example when it improves understanding.
+- Include code only when it is genuinely useful.
+- Mention common mistakes, edge cases, or trade-offs where relevant.
+- Keep answers structured, concise, and easy to revise.
+
+Compatibility Requirements:
+- Every item MUST include "question" and "answer" fields. The app depends on these keys.
+- You may include "difficulty", "category", and "tags" for richer metadata.
+- Return exactly ${numberOfQuestions} items.
+
+Return only valid JSON.
+Do not include markdown fences, comments, explanations, or text outside the JSON array.
+
+JSON format:
+[
+  {
+    "question": "Question text here",
+    "answer": "Structured answer here",
+    "difficulty": "Beginner | Intermediate | Advanced",
+    "category": "Conceptual | Practical | Scenario | Debugging",
+    "tags": ["topic1", "topic2"]
+  }
+]
+`;
 
 
-const conceptExplainPrompt=(question)=>`
-        You are an AI trained to generate explanations for given interview questions.
+const conceptExplainPrompt = (question) => `
+You are a senior software engineer explaining interview concepts clearly.
 
-        Task:
-        - Explain the following interview questions and its concept in depth as if you're teaching a beginner software professional.
-        - Question: "${question}"
-        - After the explanation, provide a short and clear title that summarizes the concept for the article or page header.
-        - If the explanation includes a code example, provide a small block of code.
-        - Keep the formatting very clean and clear.
-        - Return the result as a valid JSON object in the following format:
-        {
-            "title":"Short title here?",
-            "explanation":"Explanation here."
-        }
-        Important: Do NOT add any extra text outside the JSON format. Only return valid JSON. 
-        `;
-module.exports={questionAnswerPrompt,conceptExplainPrompt};
+Explain this interview question:
+"${question}"
+
+Explanation Requirements:
+- Provide a short, clear title.
+- Explain the core concept in beginner-friendly language.
+- Break the explanation into clear sections.
+- Include a real-world use case or analogy if helpful.
+- Add a small code example only when it improves the explanation.
+- Include common mistakes, edge cases, or misconceptions.
+- End with a short interview-style summary the user can revise quickly.
+
+Compatibility Requirements:
+- The response MUST include "title" and "explanation" fields. The app depends on these keys.
+- The "explanation" value can contain markdown-compatible text.
+
+Return only valid JSON.
+Do not include markdown fences, comments, explanations, or text outside the JSON object.
+
+JSON format:
+{
+  "title": "Short concept title",
+  "explanation": "Full explanation in markdown-compatible text"
+}
+`;
+
+module.exports = { questionAnswerPrompt, conceptExplainPrompt };

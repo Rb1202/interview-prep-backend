@@ -19,12 +19,20 @@ exports.addQuestionsToSession = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
+    const validQuestions = questions.filter(
+      (q) => q?.question?.trim() && q?.answer?.trim()
+    );
+
+    if (validQuestions.length === 0) {
+      return res.status(400).json({ message: "At least one valid question and answer is required" });
+    }
+
     //Create new questions
     const createdQuestions = await Question.insertMany(
-      questions.map((q) => ({
+      validQuestions.map((q) => ({
         session: sessionId,
-        question: q.question,
-        answer: q.answer,
+        question: q.question.trim(),
+        answer: q.answer.trim(),
       }))
     );
 

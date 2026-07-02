@@ -15,6 +15,14 @@ exports.createSession = async (req, res) => {
       return res.status(400).json({ success: false, message: "Role, experience, topics and questions are required" });
     }
 
+    const validQuestions = questions.filter(
+      (q) => q?.question?.trim() && q?.answer?.trim()
+    );
+
+    if (validQuestions.length === 0) {
+      return res.status(400).json({ success: false, message: "At least one valid question and answer is required" });
+    }
+
     const session = await Session.create({
       user: userId,
       role: role.trim(),
@@ -24,11 +32,11 @@ exports.createSession = async (req, res) => {
     });
 
     const questionDocs = await Promise.all(
-      questions.map(async (q) => {
+      validQuestions.map(async (q) => {
         const question = await Question.create({
           session: session._id,
-          question: q.question,
-          answer: q.answer,
+          question: q.question.trim(),
+          answer: q.answer.trim(),
         });
         return question._id;
       })
