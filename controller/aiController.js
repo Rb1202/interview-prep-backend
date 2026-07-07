@@ -45,12 +45,19 @@ const generateInterviewQuestions = async (req, res) => {
     const { role, experience, topicsToFocus, numberOfQuestions } = req.body;
     const questionCount = Number(numberOfQuestions);
 
-    if (!role || !experience || !topicsToFocus || !Number.isInteger(questionCount)) {
+    if (
+      !role ||
+      !experience ||
+      !topicsToFocus ||
+      !Number.isInteger(questionCount)
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     if (questionCount < 1 || questionCount > 20) {
-      return res.status(400).json({ message: "Number of questions must be between 1 and 20" });
+      return res
+        .status(400)
+        .json({ message: "Number of questions must be between 1 and 20" });
     }
 
     const prompt = questionAnswerPrompt(
@@ -67,7 +74,9 @@ const generateInterviewQuestions = async (req, res) => {
 
     const data = parseJsonFromModelText(response.text);
     if (!Array.isArray(data)) {
-      return res.status(502).json({ message: "AI returned an invalid question format" });
+      return res
+        .status(502)
+        .json({ message: "AI returned an invalid question format" });
     }
     res.status(200).json(data);
   } catch (error) {
@@ -107,10 +116,13 @@ const generateConceptExplanation = async (req, res) => {
       contents: prompt,
     });
 
-    const rawText = response.text || response?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const rawText =
+      response.text || response?.candidates?.[0]?.content?.parts?.[0]?.text;
     const data = parseJsonFromModelText(rawText);
     if (!data.title || !data.explanation) {
-      return res.status(502).json({ message: "AI returned an invalid explanation format" });
+      return res
+        .status(502)
+        .json({ message: "AI returned an invalid explanation format" });
     }
     res.status(200).json(data);
   } catch (error) {
